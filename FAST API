@@ -1,0 +1,41 @@
+from fastapi import FastAPI
+from pydantic import BaseModel
+import copy
+
+from agent.comprehensive_agent_fixed import build_correct_graph
+
+app = FastAPI()
+agent_app = build_correct_graph()
+sessions = {}
+
+
+class ChatRequest(BaseModel):
+    session_id: str
+    message: str
+
+
+@app.get("/health")
+def health():
+    return {"status": "ok"}
+
+
+@app.post("/chat")
+def chat(req: ChatRequest):
+    if req.session_id not in sessions:
+        sessions[req.session_id] = {
+            "user_message": "",
+            "intent": "",
+            "retrieved_context": "",
+            "name": None,
+            "email": None,
+            "platform": None,
+            "response": ""
+        }
+
+    state = copy.deepcopy(sessions[req.session_id])
+    state["user_message"] = req.message
+
+    result = agent_app.invoke(state)
+    sessions[req.session_id] = result
+
+    return {"response": result["response"]}
