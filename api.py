@@ -6,41 +6,40 @@ from agent.comprehensive_agent_fixed import build_correct_graph
 
 app = FastAPI()
 
-# ✅ Mount UI immediately after app creation
+# ---------------- UI ----------------
 app.mount("/ui", StaticFiles(directory="static", html=True), name="ui")
 
+# ---------------- Agent ----------------
+graph = build_correct_graph()
+sessions = {}
 
-@app.get("/")
+
+# ---------------- Models ----------------
+class ChatRequest(BaseModel):
+    session_id: str
+    message: str
+
+
+# ---------------- Routes ----------------
+@app.get("/api")
 def home():
     return {
         "message": "AutoStream AI Agent API is running",
         "endpoints": {
-            "health": "/health",
-            "chat": "/chat",
+            "health": "/api/health",
+            "chat": "/api/chat",
             "ui": "/ui",
             "docs": "/docs"
         }
     }
 
 
-@app.get("/health")
+@app.get("/api/health")
 def health():
     return {"status": "ok"}
 
 
-class ChatRequest(BaseModel):
-    message: str
-
-
-sessions = {}
-
-
-class ChatRequest(BaseModel):
-    session_id: str
-    message: str
-
-
-@app.post("/chat")
+@app.post("/api/chat")
 def chat(req: ChatRequest):
     if req.session_id not in sessions:
         sessions[req.session_id] = {
@@ -56,9 +55,7 @@ def chat(req: ChatRequest):
     state = sessions[req.session_id]
     state["user_message"] = req.message
 
-    graph = build_correct_graph()
     result = graph.invoke(state)
-
     sessions[req.session_id] = result
-    return {"state": result}
 
+    return {"response": result["response"]}
