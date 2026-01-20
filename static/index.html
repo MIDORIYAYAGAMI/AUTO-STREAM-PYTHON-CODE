@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <title>AutoStream AI Chat</title>
+
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: #0f172a;
+            color: #e5e7eb;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+        }
+
+        .chat-container {
+            width: 420px;
+            background: #020617;
+            border-radius: 10px;
+            padding: 16px;
+            box-shadow: 0 0 20px rgba(0,0,0,0.6);
+            display: flex;
+            flex-direction: column;
+        }
+
+        h2 {
+            text-align: center;
+            margin-bottom: 10px;
+        }
+
+        #chat {
+            flex: 1;
+            overflow-y: auto;
+            border: 1px solid #1e293b;
+            padding: 10px;
+            margin-bottom: 10px;
+            border-radius: 6px;
+            background: #020617;
+            font-size: 14px;
+        }
+
+        .user {
+            color: #38bdf8;
+            margin-bottom: 6px;
+        }
+
+        .agent {
+            color: #22c55e;
+            margin-bottom: 10px;
+        }
+
+        .input-row {
+            display: flex;
+            gap: 8px;
+        }
+
+        input {
+            flex: 1;
+            padding: 8px;
+            border-radius: 6px;
+            border: none;
+            outline: none;
+        }
+
+        button {
+            padding: 8px 14px;
+            border-radius: 6px;
+            border: none;
+            cursor: pointer;
+            background: #2563eb;
+            color: white;
+            font-weight: bold;
+        }
+
+        button:hover {
+            background: #1d4ed8;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="chat-container">
+        <h2>AutoStream AI</h2>
+
+        <div id="chat"></div>
+
+        <div class="input-row">
+            <input id="message" placeholder="Type your message..." />
+            <button onclick="sendMessage()">Send</button>
+        </div>
+    </div>
+
+    <script>
+        const sessionId = crypto.randomUUID();
+
+        async function sendMessage() {
+            const input = document.getElementById("message");
+            const chat = document.getElementById("chat");
+
+            const msg = input.value.trim();
+            if (!msg) return;
+
+            chat.innerHTML += `<div class="user">You: ${msg}</div>`;
+            input.value = "";
+
+            try {
+                const res = await fetch("/chat", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                        session_id: sessionId,
+                        message: msg
+                    })
+                });
+
+                const data = await res.json();
+
+                // ✅ CORRECT RESPONSE PATH
+                const reply = data.state.response;
+
+                chat.innerHTML += `<div class="agent">Agent: ${reply}</div>`;
+                chat.scrollTop = chat.scrollHeight;
+
+            } catch (err) {
+                chat.innerHTML += `<div class="agent">Agent: Server error</div>`;
+            }
+        }
+
+        // Send on Enter key
+        document.getElementById("message").addEventListener("keydown", function(e) {
+            if (e.key === "Enter") sendMessage();
+        });
+    </script>
+</body>
+</html>
